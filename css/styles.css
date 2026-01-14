@@ -519,10 +519,9 @@ body {
     margin: 0;
 }
 
-/* Контейнер для изображения в breakdown */
+/* Breakdown Image - теперь показывается только при наличии картинки */
 .breakdown-image-container {
     margin: 0 1.5rem 1rem 1.5rem;
-    min-height: 150px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -582,7 +581,7 @@ body {
     flex-shrink: 0;
 }
 
-/* Placeholder for images - общие стили */
+/* Placeholder for images - общие стили
 .image-placeholder {
     display: flex;
     flex-direction: column;
@@ -602,6 +601,7 @@ body {
 .image-placeholder svg {
     color: var(--muted-foreground);
 }
+*/
 
 /* Убираем марджины у заголовков в карточках */
 .breakdown-card-header h3,
@@ -609,11 +609,10 @@ body {
     margin: 0;
 }
 
-/* Question Image */
+/* Question Image - теперь показывается только при наличии картинки */
 .question-image-container {
     margin: 1rem 0;
     text-align: center;
-    min-height: 200px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -742,4 +741,5 @@ body {
         margin-right: 1rem;
         min-height: 120px;
     }
+
 }
