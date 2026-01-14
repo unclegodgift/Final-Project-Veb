@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Результаты - Платформа 3DТесты</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <title>Результаты</title>
+    <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 <body>
     <header class="header">
         <div class="container">
-            <a href="index.html" class="logo">3DТесты</a>
+            <a href="index.html" class="logo">TESTio</a>
         </div>
     </header>
 
@@ -21,7 +21,7 @@
             <div class="results-card">
                 <div class="results-header">
                     <h1 class="results-title">Результаты теста</h1>
-                    <p class="results-subtitle" id="resultsSubtitle"></p>
+                    <p class="results-subtitle" id="resultsSubtitle">Загрузка...</p>
                 </div>
                 <div class="results-content">
                     <p class="results-score" id="resultsScore">0%</p>
@@ -53,27 +53,53 @@
     </main>
 
     <script src="js/data.js"></script>
-    <script src="js/app.js"></script>
     <script>
+        // Делаем tests доступной глобально
+        console.log('Загружено тестов:', tests.length);
+        
         let currentTest = null;
         let answers = {};
 
         document.addEventListener('DOMContentLoaded', function() {
-            const testId = new URLSearchParams(window.location.search).get('id');
+            console.log('DOM загружен');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const testId = urlParams.get('id');
+            console.log('ID теста из URL:', testId);
+            
             if (!testId) {
+                console.error('ID теста не найден в URL');
                 window.location.href = 'index.html';
                 return;
             }
 
+            // Ищем тест
             currentTest = tests.find(t => t.id === testId);
+            console.log('Найден тест:', currentTest);
+            
             if (!currentTest) {
+                console.error('Тест с ID', testId, 'не найден');
                 window.location.href = 'index.html';
                 return;
             }
 
-            const storedAnswers = localStorage.getItem(`3dtest-answers-${testId}`);
+            // Загружаем ответы
+            const storageKey = `3dtest-answers-${testId}`;
+            console.log('Ключ localStorage:', storageKey);
+            
+            const storedAnswers = localStorage.getItem(storageKey);
+            console.log('Сохраненные ответы из localStorage:', storedAnswers);
+            
             if (storedAnswers) {
-                answers = JSON.parse(storedAnswers);
+                try {
+                    answers = JSON.parse(storedAnswers);
+                    console.log('Парсинг ответов успешен:', answers);
+                } catch (e) {
+                    console.error('Ошибка парсинга JSON:', e);
+                    answers = {};
+                }
+            } else {
+                console.warn('Ответы не найдены в localStorage');
             }
 
             calculateResults();
@@ -81,26 +107,67 @@
         });
 
         function calculateResults() {
+            console.log('Расчет результатов для теста:', currentTest.title);
+            console.log('Количество вопросов:', currentTest.questions.length);
+            console.log('Ответы пользователя:', answers);
+            
             let correct = 0;
             
             currentTest.questions.forEach(question => {
-                const userAnswer = (answers[question.id] || '').toString().trim().toLowerCase();
+                console.log('\n--- Обработка вопроса ---');
+                console.log('ID вопроса:', question.id);
+                console.log('Текст вопроса:', question.text);
+                console.log('Тип вопроса:', question.type);
+                console.log('Правильный ответ:', question.correctAnswer);
                 
-                // Обрабатываем правильный ответ
-                let correctAnswer;
-                if (Array.isArray(question.correctAnswer)) {
-                    correctAnswer = question.correctAnswer.map(answer => answer.toString().trim().toLowerCase());
-                } else {
-                    correctAnswer = [question.correctAnswer.toString().trim().toLowerCase()];
+                const userAnswer = answers[question.id];
+                console.log('Ответ пользователя:', userAnswer);
+                
+                if (!userAnswer) {
+                    console.log('Пользователь не ответил на этот вопрос');
+                    return;
                 }
                 
-                // Проверяем ответ пользователя
-                if (userAnswer && correctAnswer.includes(userAnswer)) {
-                    correct++;
+                // Приводим к строке и нижнему регистру для сравнения
+                const userAnswerStr = String(userAnswer).trim().toLowerCase();
+                let correctAnswer = question.correctAnswer;
+                
+                // Обрабатываем правильный ответ
+                if (Array.isArray(correctAnswer)) {
+                    // Если правильный ответ - массив
+                    const correctAnswersLower = correctAnswer.map(ans => 
+                        String(ans).trim().toLowerCase()
+                    );
+                    console.log('Правильные ответы (массив):', correctAnswersLower);
+                    
+                    if (correctAnswersLower.includes(userAnswerStr)) {
+                        correct++;
+                        console.log('✓ Ответ правильный!');
+                    } else {
+                        console.log('✗ Ответ неправильный');
+                    }
+                } else {
+                    // Если правильный ответ - строка
+                    const correctAnswerStr = String(correctAnswer).trim().toLowerCase();
+                    console.log('Правильный ответ (строка):', correctAnswerStr);
+                    
+                    if (userAnswerStr === correctAnswerStr) {
+                        correct++;
+                        console.log('✓ Ответ правильный!');
+                    } else {
+                        console.log('✗ Ответ неправильный');
+                    }
                 }
             });
 
-            const score = Math.round((correct / currentTest.questions.length) * 100);
+            console.log('\n--- ИТОГИ ---');
+            console.log('Правильных ответов:', correct, 'из', currentTest.questions.length);
+            
+            const score = currentTest.questions.length > 0 
+                ? Math.round((correct / currentTest.questions.length) * 100)
+                : 0;
+            
+            console.log('Процент:', score + '%');
             
             document.getElementById('resultsSubtitle').textContent = `Результаты теста: ${currentTest.title}`;
             document.getElementById('resultsScore').textContent = `${score}%`;
@@ -109,23 +176,49 @@
         }
 
         function displayBreakdown() {
+            console.log('\n--- Отображение разбора ответов ---');
+            
             const breakdownList = document.getElementById('breakdownList');
             breakdownList.innerHTML = '';
-        
+
+            if (!currentTest || !currentTest.questions) {
+                console.error('Нет вопросов для отображения');
+                breakdownList.innerHTML = '<p>Вопросы не найдены</p>';
+                return;
+            }
+
             currentTest.questions.forEach((question, index) => {
+                console.log(`\nВопрос ${index + 1}:`, question.text);
+                
                 const userAnswer = answers[question.id] || 'Нет ответа';
-                const correctAnswer = Array.isArray(question.correctAnswer)
-                    ? question.correctAnswer.join(' или ')
-                    : question.correctAnswer;
+                console.log('Ответ пользователя:', userAnswer);
                 
-                const userAnswerLower = userAnswer.toString().toLowerCase();
-                const correctAnswerLower = Array.isArray(question.correctAnswer)
-                    ? question.correctAnswer.map(a => a.toString().toLowerCase())
-                    : [question.correctAnswer.toString().toLowerCase()];
+                // Получаем правильный ответ
+                let correctAnswer;
+                if (Array.isArray(question.correctAnswer)) {
+                    correctAnswer = question.correctAnswer.join(' или ');
+                } else {
+                    correctAnswer = question.correctAnswer;
+                }
+                console.log('Правильный ответ:', correctAnswer);
                 
-                const isCorrect = correctAnswerLower.includes(userAnswerLower);
-        
-                // Создаем HTML для картинки ТОЛЬКО если есть изображение
+                // Проверяем правильность
+                const userAnswerStr = String(userAnswer).trim().toLowerCase();
+                let isCorrect = false;
+                
+                if (Array.isArray(question.correctAnswer)) {
+                    const correctAnswersLower = question.correctAnswer.map(ans => 
+                        String(ans).trim().toLowerCase()
+                    );
+                    isCorrect = correctAnswersLower.includes(userAnswerStr);
+                } else {
+                    const correctAnswerStr = String(question.correctAnswer).trim().toLowerCase();
+                    isCorrect = userAnswerStr === correctAnswerStr;
+                }
+                
+                console.log('Ответ правильный?', isCorrect);
+
+                // Создаем HTML для картинки только если она есть
                 let imageHTML = '';
                 if (question.image) {
                     imageHTML = `
@@ -135,39 +228,6 @@
                         </div>
                     `;
                 }
-        
-                const questionCard = document.createElement('div');
-                questionCard.className = `breakdown-card ${isCorrect ? 'correct' : 'incorrect'}`;
-                
-                questionCard.innerHTML = `
-                    <div class="breakdown-card-header">
-                        <h3 class="breakdown-card-title">Вопрос ${index + 1}</h3>
-                        <p class="breakdown-card-text">${question.text}</p>
-                    </div>
-                    ${imageHTML}
-                    <div class="breakdown-card-content">
-                        <div class="breakdown-answer">
-                            <span class="breakdown-label">Ваш ответ:</span>
-                            <span class="breakdown-value ${isCorrect ? 'correct' : 'incorrect'}">
-                                ${userAnswer}
-                                ${isCorrect 
-                                    ? '<svg class="breakdown-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'
-                                    : '<svg class="breakdown-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>'
-                                }
-                            </span>
-                        </div>
-                        ${!isCorrect ? `
-                            <div class="breakdown-answer">
-                                <span class="breakdown-label">Правильный ответ:</span>
-                                <span class="breakdown-value">${correctAnswer}</span>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-                
-                breakdownList.appendChild(questionCard);
-            });
-        }
 
                 const questionCard = document.createElement('div');
                 questionCard.className = `breakdown-card ${isCorrect ? 'correct' : 'incorrect'}`;
@@ -200,12 +260,17 @@
                 
                 breakdownList.appendChild(questionCard);
             });
+            
+            console.log('Разбор ответов отображен');
         }
 
         function retakeTest() {
-            window.location.href = `test.html?id=${currentTest.id}`;
+            if (currentTest) {
+                window.location.href = `test.html?id=${currentTest.id}`;
+            } else {
+                window.location.href = 'index.html';
+            }
         }
     </script>
 </body>
-
 </html>
